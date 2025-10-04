@@ -19,6 +19,12 @@ Custom slash commands for structured workflows:
 - **`/generate-prp`** - Creates comprehensive PRPs (Prompt Request Proposals) with codebase research and implementation blueprints
 - **`/execute-prp`** - Executes PRPs for one-pass feature implementation
 
+### `.claude/agents/`
+Specialized AI agents for specific tasks:
+
+- **`senior-systems-architect`** - Architecture expert focused on modular, black-box design principles for building maintainable systems. Analyzes codebases for architectural patterns and suggests refactoring strategies.
+- **`library-docs-researcher`** - Documentation researcher that finds comprehensive library documentation using Context7 and web search. Provides installation guides, usage examples, and API references for any library or framework.
+
 ## Usage
 
 Clone this repository as a starting point for new Claude Code projects. The hooks ensure code quality and security, while the commands provide structured approaches for complex feature development.

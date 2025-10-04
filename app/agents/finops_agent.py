@@ -75,8 +75,14 @@ def finops_assistant(query: str) -> str:
         cost_explorer_mcp = MCPClient(
             lambda: stdio_client(
                 StdioServerParameters(
-                    command="uvx",
-                    args=["awslabs.cost-explorer-mcp-server@latest"],
+                    command="uv",
+                    args=[
+                        "tool",
+                        "run",
+                        "--from",
+                        "awslabs.cost-explorer-mcp-server@latest",
+                        "awslabs.cost-explorer-mcp-server",
+                    ],
                     env={
                         "AWS_REGION": settings.AWS_REGION,
                         "AWS_PROFILE": settings.AWS_PROFILE or "",

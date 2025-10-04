@@ -57,7 +57,9 @@ class StrandsAgent:
         try:
             async for event in self.agent.stream_async(prompt):
                 # Debug: log the raw event structure
-                logger.debug("Raw event type: %s, event: %s", type(event).__name__, str(event)[:200])
+                logger.debug(
+                    "Raw event type: %s, event: %s", type(event).__name__, str(event)[:200]
+                )
 
                 # Handle text data chunks from Strands
                 if "data" in event:
@@ -72,7 +74,11 @@ class StrandsAgent:
                 # Handle tool usage
                 elif "current_tool_use" in event:
                     tool_info = event["current_tool_use"]
-                    tool_name = tool_info.get("name", "unknown") if isinstance(tool_info, dict) else "unknown"
+                    tool_name = (
+                        tool_info.get("name", "unknown")
+                        if isinstance(tool_info, dict)
+                        else "unknown"
+                    )
                     logger.debug("Tool use for user %s: %s", user_id, tool_name)
                     yield {
                         "type": "tool_use",

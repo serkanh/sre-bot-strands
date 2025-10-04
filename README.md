@@ -4,15 +4,52 @@ A FastAPI-based application powered by AWS Strands framework for building AI age
 
 ## Features
 
+- **Multi-Agent Architecture**: Intelligent query routing with specialized agents
+  - **Coordinator Agent**: Routes queries to appropriate specialist agents
+  - **FinOps Agent**: AWS cost analysis using Cost Explorer MCP tools
+  - Extensible design for adding more specialist agents
 - **Two-Service Architecture**: Separate API and Web services sharing the same codebase
   - **API Service** (Port 8000): Strict API endpoints without CORS or static files
   - **Web Service** (Port 8001): Full-featured web UI with CORS and static file serving
 - **AWS Bedrock Integration**: Claude 4.0 Sonnet model via AWS Bedrock
+- **MCP Integration**: Model Context Protocol support for AWS Cost Explorer
 - **Real-time Bot Activity**: Toggleable status display showing agent thinking and tool usage
 - **Session Management**: File-based conversation history storage
 - **Docker Support**: Complete docker-compose setup for easy deployment
 - **Type Safety**: Full Pydantic validation and type hints
 - **Code Quality**: Configured with Ruff for linting and formatting
+
+## Multi-Agent Architecture
+
+The application uses a **coordinator-specialist pattern** where a coordinator agent routes queries to specialized agents:
+
+### Coordinator Agent
+- Routes user queries to appropriate specialist agents
+- Handles general SRE questions directly
+- Maintains conversation context across interactions
+
+### FinOps Agent
+- Specialized in AWS cost analysis and optimization
+- Integrates with AWS Cost Explorer via MCP (Model Context Protocol)
+- Provides:
+  - Cost breakdowns by service, region, or time period
+  - Cost comparisons between periods
+  - Cost forecasting
+  - Optimization recommendations
+
+### Example Queries
+
+**Cost/FinOps Queries** (routed to FinOps Agent):
+- "What are my AWS costs for last month?"
+- "Show me EC2 spending trends"
+- "Forecast next month's AWS costs"
+- "Compare costs between Q1 and Q2"
+
+**General SRE Queries** (handled by Coordinator):
+- "How do I troubleshoot EC2 instances?"
+- "What's the best practice for Docker deployments?"
+
+**Note**: AWS Cost Explorer API charges $0.01 per request. Use wisely!
 
 ## Architecture
 
@@ -48,7 +85,11 @@ The application uses a single codebase with `SERVICE_MODE` environment variable 
 - Python 3.11+
 - Docker & Docker Compose (for containerized deployment)
 - AWS Account with Bedrock access
-- AWS credentials configured
+- AWS credentials configured with Cost Explorer permissions:
+  - `ce:GetCostAndUsage`
+  - `ce:GetCostForecast`
+  - `ce:GetDimensionValues`
+- `uvx` (for running MCP servers) - installed with `pip install uv`
 
 ## Quick Start
 

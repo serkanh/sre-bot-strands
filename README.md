@@ -19,6 +19,12 @@ Custom slash commands for structured workflows:
 - **`/generate-prp`** - Creates comprehensive PRPs (Prompt Request Proposals) with codebase research and implementation blueprints
 - **`/execute-prp`** - Executes PRPs for one-pass feature implementation
 
+**Workflow:**
+1. Update `INITIAL.md` with all required fields (feature description, examples, documentation, and other considerations)
+2. Run `/generate-prp` in Claude Code to create a comprehensive PRP markdown file
+3. Pass the generated PRP file as an argument to `/execute-prp` (e.g., `/execute-prp prp_filename.md`)
+4. Claude will build the application according to the PRP specifications
+
 ### `.claude/agents/`
 Specialized AI agents for specific tasks:
 

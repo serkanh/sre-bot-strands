@@ -1,0 +1,76 @@
+services:
+  # API Service - Strict API mode without CORS or static files
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sre-bot-api
+    environment:
+      - SERVICE_MODE=api
+      - PORT=8000
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_PROFILE=${AWS_PROFILE:-}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - BEDROCK_MODEL_ID=${BEDROCK_MODEL_ID:-anthropic.claude-3-5-sonnet-20241022-v2:0}
+      - SESSION_STORAGE_PATH=/app/sessions
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./sessions:/app/sessions
+      - ./app:/app/app
+      - ${HOME}/.aws:/home/appuser/.aws:ro  # Mount AWS credentials folder (read-only)
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - sre-bot-network
+
+  # Web Service - Web UI with CORS and static files
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sre-bot-web
+    environment:
+      - SERVICE_MODE=web
+      - PORT=8001
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_PROFILE=${AWS_PROFILE:-}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - BEDROCK_MODEL_ID=${BEDROCK_MODEL_ID:-anthropic.claude-3-5-sonnet-20241022-v2:0}
+      - SESSION_STORAGE_PATH=/app/sessions
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./sessions:/app/sessions
+      - ./app:/app/app
+      - ${HOME}/.aws:/home/appuser/.aws:ro  # Mount AWS credentials folder (read-only)
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - sre-bot-network
+    depends_on:
+      - api
+
+networks:
+  sre-bot-network:
+    driver: bridge
+
+volumes:
+  sessions:
+    driver: local

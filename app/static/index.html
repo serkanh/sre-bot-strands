@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRE Bot - Strands Playground</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 SRE Bot Strands</h1>
+            <div class="header-controls">
+                <div class="status-toggle">
+                    <label>
+                        <input type="checkbox" id="showStatus" checked>
+                        <span>Show Bot Activity</span>
+                    </label>
+                </div>
+                <div class="health-indicator" id="healthIndicator">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Checking...</span>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="chat-container">
+                <!-- Bot Status Panel (toggleable) -->
+                <div class="status-panel" id="statusPanel">
+                    <h3>Bot Activity</h3>
+                    <div class="status-content" id="statusContent">
+                        <p class="status-idle">Waiting for input...</p>
+                    </div>
+                </div>
+
+                <!-- Chat Messages -->
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message system">
+                        <div class="message-content">
+                            <p>Welcome to SRE Bot! I'm powered by AWS Strands and ready to help you.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Input -->
+                <div class="chat-input-container">
+                    <div class="input-wrapper">
+                        <textarea
+                            id="messageInput"
+                            placeholder="Type your message here..."
+                            rows="1"
+                        ></textarea>
+                        <button id="sendButton" class="send-button">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M2 10L18 2L12 18L10 12L2 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="input-actions">
+                        <button id="clearButton" class="action-button">Clear History</button>
+                        <span class="user-id-display">User: <span id="userIdDisplay">anonymous</span></span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Powered by AWS Strands Framework |
+                <a href="/health" target="_blank">Health Check</a> |
+                <a href="/docs" target="_blank">API Docs</a>
+            </p>
+        </footer>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>

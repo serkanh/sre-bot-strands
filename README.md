@@ -7,7 +7,7 @@ A FastAPI-based application powered by AWS Strands framework for building AI age
 - **Two-Service Architecture**: Separate API and Web services sharing the same codebase
   - **API Service** (Port 8000): Strict API endpoints without CORS or static files
   - **Web Service** (Port 8001): Full-featured web UI with CORS and static file serving
-- **AWS Bedrock Integration**: Claude 3.5 Sonnet model via AWS Bedrock
+- **AWS Bedrock Integration**: Claude 4.0 Sonnet model via AWS Bedrock
 - **Real-time Bot Activity**: Toggleable status display showing agent thinking and tool usage
 - **Session Management**: File-based conversation history storage
 - **Docker Support**: Complete docker-compose setup for easy deployment
@@ -416,4 +416,4 @@ For issues and questions:
 
 - Built with [FastAPI](https://fastapi.tiangolo.com/)
 - Powered by [AWS Strands](https://github.com/awslabs/strands)
-- Uses [Claude 3.5 Sonnet](https://www.anthropic.com/claude) via AWS Bedrock
+- Uses [Claude 4.0 Sonnet](https://www.anthropic.com/claude) via AWS Bedrock

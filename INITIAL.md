@@ -73,5 +73,4 @@ def run_research_workflow(user_input):
 
 ## OTHER CONSIDERATIONS
 
-- Make sure to use `strands-agents` mcp server to get the documentation and examples for strands framework and awslabs.aws-documentation-mcp-server for aws documentation.
-- Make sure functionality both services are working together.
+- use @agent-library-docs-researcher to find the documentation for the library.

@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from app.agents.strands_agent import StrandsAgent
+from app.agents.coordinator_agent import CoordinatorAgent
 from app.main import create_app
 
 
@@ -25,12 +25,12 @@ def mock_settings():
 @pytest.fixture
 def client(mock_settings):
     """Create test client."""
-    from app.agents.strands_agent import StrandsAgent
+    from app.agents.coordinator_agent import CoordinatorAgent
     from app.api import routes
     from app.services.session_manager import SessionManager
 
     # Initialize the global instances for testing
-    routes.agent = StrandsAgent(mock_settings)
+    routes.agent = CoordinatorAgent(mock_settings)
     routes.session_manager = SessionManager(mock_settings.SESSION_STORAGE_PATH)
 
     app = create_app()
@@ -63,9 +63,9 @@ async def test_chat_endpoint(client):
     # Mock the agent's chat method
     async def mock_events(*args, **kwargs):
         yield {"type": "thinking", "status": "thinking"}
-        yield {"type": "agent_message", "content": "Test response"}
+        yield {"type": "agent_message", "content": "Test response", "is_chunk": True}
 
-    with patch.object(StrandsAgent, "chat", side_effect=lambda *args, **kwargs: mock_events()):
+    with patch.object(CoordinatorAgent, "chat", side_effect=lambda *args, **kwargs: mock_events()):
         response = client.post(
             "/api/chat",
             json={"user_id": "test_user", "message": "Hello"},

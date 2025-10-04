@@ -28,7 +28,7 @@ def mock_settings():
 @pytest.fixture
 def web_client(mock_settings):
     """Create test client for web service."""
-    from app.agents.strands_agent import StrandsAgent
+    from app.agents.coordinator_agent import CoordinatorAgent
     from app.api import routes
     from app.services.session_manager import SessionManager
 
@@ -39,7 +39,7 @@ def web_client(mock_settings):
         patch("app.api.health.get_settings", return_value=mock_settings),
     ):
         # Initialize the global instances for testing
-        routes.agent = StrandsAgent(mock_settings)
+        routes.agent = CoordinatorAgent(mock_settings)
         routes.session_manager = SessionManager(mock_settings.SESSION_STORAGE_PATH)
 
         app = create_app()

@@ -1,0 +1,1 @@
+"""AWS Strands FastAPI Application."""

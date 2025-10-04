@@ -229,10 +229,17 @@ class ChatApp {
         const messageContent = document.createElement('div');
         messageContent.className = 'message-content';
 
-        const messageParagraph = document.createElement('p');
-        messageParagraph.textContent = content;
+        // Render markdown for assistant messages, plain text for others
+        if (role === 'assistant' && typeof marked !== 'undefined') {
+            messageContent.innerHTML = marked.parse(content);
+        } else {
+            // For user/system/error messages, preserve newlines with plain text
+            const messageParagraph = document.createElement('p');
+            messageParagraph.style.whiteSpace = 'pre-wrap';
+            messageParagraph.textContent = content;
+            messageContent.appendChild(messageParagraph);
+        }
 
-        messageContent.appendChild(messageParagraph);
         messageDiv.appendChild(messageContent);
 
         this.elements.chatMessages.appendChild(messageDiv);

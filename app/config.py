@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     SESSION_STORAGE_PATH: str = "./sessions"
     LOG_LEVEL: str = "INFO"
 
+    # MCP Configuration
+    FASTMCP_LOG_LEVEL: str = "ERROR"  # Control MCP server logging
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 

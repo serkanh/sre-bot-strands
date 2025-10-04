@@ -23,6 +23,12 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/app/.venv/bin:$PATH"
 
+# Copy uv binary for MCP server execution (needed by FinOps agent)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Create uvx symlink for MCP server execution
+RUN ln -s /usr/local/bin/uv /usr/local/bin/uvx
+
 # Create non-root user
 RUN useradd -m -u 1000 appuser && \
     mkdir -p /app/sessions && \

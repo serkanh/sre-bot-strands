@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.agents.strands_agent import StrandsAgent
+from app.agents.coordinator_agent import CoordinatorAgent
 from app.api import health, routes
 from app.config import get_settings
 from app.services.session_manager import SessionManager
@@ -35,10 +35,10 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     logger.info("Starting application in %s mode on port %s", settings.SERVICE_MODE, settings.PORT)
 
     # Initialize shared components
-    routes.agent = StrandsAgent(settings)
+    routes.agent = CoordinatorAgent(settings)
     routes.session_manager = SessionManager(settings.SESSION_STORAGE_PATH)
 
-    logger.info("Application initialized successfully")
+    logger.info("Application initialized successfully with Coordinator agent")
 
     yield
 

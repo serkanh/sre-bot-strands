@@ -4,7 +4,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.agents.strands_agent import StrandsAgent
+from app.agents.coordinator_agent import CoordinatorAgent
 from app.config import Settings, get_settings
 from app.models.schemas import (
     ChatRequest,
@@ -20,11 +20,11 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api")
 
 # Global instances (will be initialized in main.py)
-agent: StrandsAgent | None = None
+agent: CoordinatorAgent | None = None
 session_manager: SessionManager | None = None
 
 
-def get_agent() -> StrandsAgent:
+def get_agent() -> CoordinatorAgent:
     """Dependency to get the agent instance."""
     if agent is None:
         raise HTTPException(status_code=503, detail="Agent not initialized")
@@ -41,7 +41,7 @@ def get_session_manager() -> SessionManager:
 @router.post("/chat", response_model=ChatResponse)
 async def chat(
     request: ChatRequest,
-    agent: StrandsAgent = Depends(get_agent),
+    agent: CoordinatorAgent = Depends(get_agent),
     session_mgr: SessionManager = Depends(get_session_manager),
 ) -> ChatResponse:
     """Chat endpoint with streaming event support.
@@ -111,7 +111,7 @@ async def get_config(settings: Settings = Depends(get_settings)) -> ConfigRespon
 @router.post("/config", response_model=ConfigResponse)
 async def update_config(
     config_update: ConfigUpdate,
-    agent: StrandsAgent = Depends(get_agent),
+    agent: CoordinatorAgent = Depends(get_agent),
     settings: Settings = Depends(get_settings),
 ) -> ConfigResponse:
     """Update agent configuration dynamically.

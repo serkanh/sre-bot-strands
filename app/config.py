@@ -29,12 +29,8 @@ class Settings(BaseSettings):
     # MCP Configuration
     FASTMCP_LOG_LEVEL: str = "ERROR"  # Control MCP server logging
 
-    # Kubernetes Configuration (for K3s local testing)
-    KUBECONFIG: str | None = None  # Path to kubeconfig file
-
-    # EKS MCP Configuration
-    EKS_MCP_ALLOW_WRITE: bool = False  # Enable write operations
-    EKS_MCP_ALLOW_SENSITIVE_DATA: bool = False  # Enable sensitive data access
+    # Kubernetes Configuration
+    KUBECONFIG: str | None = None  # Path to kubeconfig file (for K3s or EKS)
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

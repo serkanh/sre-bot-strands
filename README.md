@@ -7,6 +7,7 @@ A FastAPI-based application powered by AWS Strands framework for building AI age
 - **Multi-Agent Architecture**: Intelligent query routing with specialized agents
   - **Coordinator Agent**: Routes queries to appropriate specialist agents
   - **FinOps Agent**: AWS cost analysis using Cost Explorer MCP tools
+  - **Kubernetes Agent**: K8s cluster management for both K3s and EKS
   - Extensible design for adding more specialist agents
 - **Two-Service Architecture**: Separate API and Web services sharing the same codebase
   - **API Service** (Port 8000): Strict API endpoints without CORS or static files
@@ -37,6 +38,42 @@ The application uses a **coordinator-specialist pattern** where a coordinator ag
   - Cost forecasting
   - Optimization recommendations
 
+### Kubernetes Agent
+- Specialized in Kubernetes cluster management and troubleshooting
+- Works with both K3s (local) and EKS (production) clusters
+- Provides:
+  - Pod listing and status checking
+  - Pod logs retrieval
+  - Deployment information
+  - Namespace management
+  - Event monitoring
+  - Cluster troubleshooting
+
+#### Local K3s Setup
+
+The project includes a K3s cluster running via Docker Compose for local development:
+
+**Architecture**: containerd-in-Docker (not Docker-in-Docker)
+- K3s runs in a privileged Docker container
+- Uses containerd as the container runtime (standard for Kubernetes)
+- Pods run inside containerd within the K3s container
+- Same architecture as tools like kind (Kubernetes IN Docker)
+
+**Access the cluster**:
+```bash
+# From host machine
+kubectl --kubeconfig=./k3s_data/kubeconfig/kubeconfig.yaml \
+  --server=https://127.0.0.1:6443 --insecure-skip-tls-verify get pods -A
+
+# From inside K3s container
+docker exec -it sre-bot-k3s kubectl get pods -A
+
+# Exec into a pod
+docker exec -it sre-bot-k3s kubectl exec -it -n kube-system <pod-name> -- sh
+```
+
+**Note**: The K3s cluster is configured with `seccomp=unconfined` for macOS compatibility.
+
 ### Example Queries
 
 **Cost/FinOps Queries** (routed to FinOps Agent):
@@ -44,6 +81,13 @@ The application uses a **coordinator-specialist pattern** where a coordinator ag
 - "Show me EC2 spending trends"
 - "Forecast next month's AWS costs"
 - "Compare costs between Q1 and Q2"
+
+**Kubernetes Queries** (routed to Kubernetes Agent):
+- "What pods are running in my cluster?"
+- "Show me logs from pod xyz-123"
+- "List all deployments in namespace production"
+- "What events occurred in the default namespace?"
+- "Check the status of pod frontend-abc"
 
 **General SRE Queries** (handled by Coordinator):
 - "How do I troubleshoot EC2 instances?"
@@ -56,28 +100,39 @@ The application uses a **coordinator-specialist pattern** where a coordinator ag
 The application uses a single codebase with `SERVICE_MODE` environment variable to determine which service to run:
 
 ```
-┌─────────────────────────────────────────┐
-│          Docker Compose                 │
-└─────────────────────────────────────────┘
-         │                    │
-   ┌─────▼─────┐        ┌────▼──────┐
-   │ API Service│        │Web Service│
-   │ Port: 8000 │        │Port: 8001 │
-   │ MODE: api  │        │MODE: web  │
-   │ - No CORS  │        │- CORS     │
-   │ - API only │        │- Static   │
-   └─────┬──────┘        │- Chat UI  │
-         │               └─────┬─────┘
-         │                     │
-         └─────────┬───────────┘
-                   │
-         ┌─────────▼──────────┐
-         │  Shared Codebase   │
-         │  - Agents          │
-         │  - Services        │
-         │  - API Routes      │
-         │  - Models          │
-         └────────────────────┘
+┌──────────────────────────────────────────────────┐
+│              Docker Compose                      │
+└──────────────────────────────────────────────────┘
+    │                │                    │
+    │          ┌─────▼─────┐        ┌────▼──────┐
+    │          │ API Service│        │Web Service│
+    │          │ Port: 8000 │        │Port: 8001 │
+    │          │ MODE: api  │        │MODE: web  │
+    │          │ - No CORS  │        │- CORS     │
+    │          │ - API only │        │- Static   │
+    │          └─────┬──────┘        │- Chat UI  │
+    │                │               └─────┬─────┘
+    │                │                     │
+    │                └─────────┬───────────┘
+    │                          │
+    │                ┌─────────▼──────────┐
+    │                │  Shared Codebase   │
+    │                │  - Agents          │
+    │                │  - Services        │
+    │                │  - API Routes      │
+    │                │  - Models          │
+    │                └────────────────────┘
+    │
+┌───▼────────────────────────────────────┐
+│ K3s Server (Local K8s Cluster)         │
+│ ┌────────────────────────────────────┐ │
+│ │ containerd (Container Runtime)     │ │
+│ │  ┌──────────┐  ┌──────────┐       │ │
+│ │  │ coredns  │  │ traefik  │  ...  │ │
+│ │  │   pod    │  │   pod    │       │ │
+│ │  └──────────┘  └──────────┘       │ │
+│ └────────────────────────────────────┘ │
+└────────────────────────────────────────┘
 ```
 
 ## Prerequisites
@@ -85,10 +140,12 @@ The application uses a single codebase with `SERVICE_MODE` environment variable 
 - Python 3.11+
 - Docker & Docker Compose (for containerized deployment)
 - AWS Account with Bedrock access
-- AWS credentials configured with Cost Explorer permissions:
-  - `ce:GetCostAndUsage`
-  - `ce:GetCostForecast`
-  - `ce:GetDimensionValues`
+- AWS credentials configured with permissions:
+  - Cost Explorer: `ce:GetCostAndUsage`, `ce:GetCostForecast`, `ce:GetDimensionValues`
+  - Bedrock: `bedrock:InvokeModel`, `bedrock:ListFoundationModels`
+- Kubernetes cluster (optional, for K8s queries):
+  - K3s (local development) or EKS (production)
+  - Valid kubeconfig file
 - `uvx` (for running MCP servers) - installed with `pip install uv`
 
 ## Quick Start
@@ -119,6 +176,9 @@ BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
 # Application Configuration
 SESSION_STORAGE_PATH=./sessions
 LOG_LEVEL=INFO
+
+# Kubernetes Configuration (optional)
+KUBECONFIG=./k3s_data/kubeconfig/kubeconfig.yaml
 ```
 
 **Option 2: Use AWS Access Keys**
@@ -138,6 +198,9 @@ BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
 # Application Configuration
 SESSION_STORAGE_PATH=./sessions
 LOG_LEVEL=INFO
+
+# Kubernetes Configuration (optional)
+KUBECONFIG=./k3s_data/kubeconfig/kubeconfig.yaml
 ```
 
 ### 2. Local Development
@@ -244,7 +307,9 @@ sre-bot-strands/
 │   ├── config.py               # Settings management
 │   ├── agents/
 │   │   ├── __init__.py
-│   │   └── strands_agent.py    # Strands agent wrapper
+│   │   ├── coordinator_agent.py # Coordinator agent
+│   │   ├── finops_agent.py      # FinOps specialist
+│   │   └── kubernetes_agent.py  # Kubernetes specialist
 │   ├── api/
 │   │   ├── __init__.py
 │   │   ├── health.py           # Health check endpoint
@@ -263,7 +328,9 @@ sre-bot-strands/
 │   ├── __init__.py
 │   ├── test_api.py
 │   ├── test_web.py
-│   └── test_agent.py
+│   ├── test_coordinator.py
+│   ├── test_finops_agent.py
+│   └── test_kubernetes_agent.py
 ├── sessions/                   # Session storage (gitignored)
 ├── .env.example
 ├── .gitignore
@@ -325,6 +392,7 @@ uv run mypy app/
 | `BEDROCK_MODEL_ID` | `anthropic.claude-3-5-sonnet-20241022-v2:0` | Bedrock model ID |
 | `SESSION_STORAGE_PATH` | `./sessions` | Session storage directory |
 | `LOG_LEVEL` | `INFO` | Logging level |
+| `KUBECONFIG` | - | (Optional) Path to kubeconfig file for K8s access |
 
 ### Service Modes
 
@@ -399,7 +467,12 @@ docker compose down
 
 # View logs
 docker compose logs -f
+
+# Start only specific services (e.g., without K3s for production)
+docker compose up api web
 ```
+
+**Note**: The docker-compose setup includes a local K3s cluster for development. In production environments connecting to external Kubernetes clusters (like EKS), you can exclude the K3s service.
 
 ### Production Considerations
 
@@ -434,6 +507,29 @@ docker compose logs -f
 2. Check Docker daemon is running
 3. Verify `.env` file is present
 4. Review container logs: `docker compose logs`
+
+### K3s Cluster Issues
+
+1. **Check cluster status**:
+   ```bash
+   docker compose logs k3s-server --tail 50
+   kubectl --kubeconfig=./k3s_data/kubeconfig/kubeconfig.yaml \
+     --server=https://127.0.0.1:6443 --insecure-skip-tls-verify get nodes
+   ```
+
+2. **Pods not starting**: Verify K3s is configured with `seccomp=unconfined` for macOS compatibility
+
+3. **Connection errors**: Ensure kubeconfig server address matches:
+   - From host: Use `https://127.0.0.1:6443`
+   - From containers: Use `https://sre-bot-k3s:6443`
+
+4. **Reset cluster**:
+   ```bash
+   docker compose down k3s-server
+   docker volume rm sre-bot-strands_k3s-server
+   rm -rf ./k3s_data/kubeconfig/*
+   docker compose up -d k3s-server
+   ```
 
 ## Contributing
 

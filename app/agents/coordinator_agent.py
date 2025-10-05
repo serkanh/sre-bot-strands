@@ -7,8 +7,8 @@ from typing import Any
 from strands import Agent
 from strands.models import BedrockModel
 
-from app.agents.eks_agent import eks_assistant
 from app.agents.finops_agent import finops_assistant
+from app.agents.kubernetes_agent import kubernetes_assistant
 from app.config import Settings
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ queries to specialized agents or answering directly.
 
 AVAILABLE SPECIALIST AGENTS:
 - finops_assistant: Use for AWS cost analysis, billing questions, and FinOps queries
-- eks_assistant: Use for Kubernetes/EKS cluster management and troubleshooting
+- kubernetes_assistant: Use for Kubernetes cluster management and troubleshooting
 
 ROUTING GUIDELINES:
 1. For cost/billing/FinOps questions → Use the finops_assistant tool
@@ -33,14 +33,14 @@ ROUTING GUIDELINES:
    - "Compare costs between months"
    - "Which service costs the most?"
 
-2. For Kubernetes/EKS questions → Use the eks_assistant tool
+2. For Kubernetes questions → Use the kubernetes_assistant tool
    Examples:
    - "What pods are running in my cluster?"
    - "Show me logs from pod X"
-   - "Deploy application Y"
-   - "Check cluster health"
-   - "List services in namespace Z"
-   - "What's the status of deployment X?"
+   - "List deployments in namespace Y"
+   - "What events occurred?"
+   - "Check pod status"
+   - "List all namespaces"
 
 3. For general SRE questions → Answer directly
    Examples:
@@ -80,7 +80,7 @@ class CoordinatorAgent:
         self.agent = Agent(
             model=self.model,
             system_prompt=COORDINATOR_SYSTEM_PROMPT,
-            tools=[finops_assistant, eks_assistant],  # Add specialist agents as tools
+            tools=[finops_assistant, kubernetes_assistant],  # Add specialist agents as tools
         )
 
         logger.info(

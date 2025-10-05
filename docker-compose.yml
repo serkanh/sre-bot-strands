@@ -1,9 +1,14 @@
 services:
   # K3s Kubernetes Server for local testing
   k3s-server:
-    image: rancher/k3s:v1.24.0-rc1-k3s1-amd64
+    image: rancher/k3s:latest
     container_name: sre-bot-k3s
-    command: server
+    command:
+      - server
+      - --kube-apiserver-arg=feature-gates=AllAlpha=false
+      - --kubelet-arg=seccomp-default=false
+      - --tls-san=sre-bot-k3s
+      - --tls-san=k3s-server
     tmpfs:
     - /run
     - /var/run
@@ -14,9 +19,14 @@ services:
         hard: 65535
     privileged: true
     restart: unless-stopped
+    security_opt:
+      - seccomp=unconfined
+      - apparmor=unconfined
     environment:
     - K3S_KUBECONFIG_OUTPUT=/output/kubeconfig.yaml
     - K3S_KUBECONFIG_MODE=666
+    - K3S_KUBECONFIG_FORCE_OVERWRITE=true
+    - K3S_TOKEN=sre-bot-k3s-token
     volumes:
     - k3s-server:/var/lib/rancher/k3s
     - ./k3s_data/kubeconfig:/output
@@ -51,8 +61,6 @@ services:
       - SESSION_STORAGE_PATH=/app/sessions
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - KUBECONFIG=${KUBECONFIG:-}
-      - EKS_MCP_ALLOW_WRITE=${EKS_MCP_ALLOW_WRITE:-false}
-      - EKS_MCP_ALLOW_SENSITIVE_DATA=${EKS_MCP_ALLOW_SENSITIVE_DATA:-false}
     ports:
       - "8000:8000"
     volumes:
@@ -91,8 +99,6 @@ services:
       - SESSION_STORAGE_PATH=/app/sessions
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - KUBECONFIG=${KUBECONFIG:-}
-      - EKS_MCP_ALLOW_WRITE=${EKS_MCP_ALLOW_WRITE:-false}
-      - EKS_MCP_ALLOW_SENSITIVE_DATA=${EKS_MCP_ALLOW_SENSITIVE_DATA:-false}
     ports:
       - "8001:8001"
     volumes:

@@ -1,4 +1,39 @@
 services:
+  # K3s Kubernetes Server for local testing
+  k3s-server:
+    image: rancher/k3s:v1.24.0-rc1-k3s1-amd64
+    container_name: sre-bot-k3s
+    command: server
+    tmpfs:
+    - /run
+    - /var/run
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 65535
+        hard: 65535
+    privileged: true
+    restart: unless-stopped
+    environment:
+    - K3S_KUBECONFIG_OUTPUT=/output/kubeconfig.yaml
+    - K3S_KUBECONFIG_MODE=666
+    volumes:
+    - k3s-server:/var/lib/rancher/k3s
+    - ./k3s_data/kubeconfig:/output
+    - ./k3s_data/docker_images:/var/lib/rancher/k3s/agent/images
+    ports:
+    - "6443:6443"  # Kubernetes API Server
+    - "80:80"      # Ingress controller
+    - "443:443"    # Ingress controller HTTPS
+    networks:
+    - sre-bot-network
+    healthcheck:
+      test: ["CMD", "kubectl", "get", "nodes"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   # API Service - Strict API mode without CORS or static files
   api:
     build:
@@ -15,12 +50,16 @@ services:
       - BEDROCK_MODEL_ID=${BEDROCK_MODEL_ID:-anthropic.claude-3-5-sonnet-20241022-v2:0}
       - SESSION_STORAGE_PATH=/app/sessions
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - KUBECONFIG=${KUBECONFIG:-}
+      - EKS_MCP_ALLOW_WRITE=${EKS_MCP_ALLOW_WRITE:-false}
+      - EKS_MCP_ALLOW_SENSITIVE_DATA=${EKS_MCP_ALLOW_SENSITIVE_DATA:-false}
     ports:
       - "8000:8000"
     volumes:
       - ./sessions:/app/sessions
       - ./app:/app/app
       - ${HOME}/.aws:/home/appuser/.aws:ro  # Mount AWS credentials folder (read-only)
+      - ./k3s_data/kubeconfig:/app/k3s_data/kubeconfig:ro  # Mount K3s kubeconfig
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     restart: unless-stopped
     healthcheck:
@@ -31,6 +70,9 @@ services:
       start_period: 10s
     networks:
       - sre-bot-network
+    depends_on:
+      k3s-server:
+        condition: service_healthy
 
   # Web Service - Web UI with CORS and static files
   web:
@@ -48,12 +90,16 @@ services:
       - BEDROCK_MODEL_ID=${BEDROCK_MODEL_ID:-anthropic.claude-3-5-sonnet-20241022-v2:0}
       - SESSION_STORAGE_PATH=/app/sessions
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - KUBECONFIG=${KUBECONFIG:-}
+      - EKS_MCP_ALLOW_WRITE=${EKS_MCP_ALLOW_WRITE:-false}
+      - EKS_MCP_ALLOW_SENSITIVE_DATA=${EKS_MCP_ALLOW_SENSITIVE_DATA:-false}
     ports:
       - "8001:8001"
     volumes:
       - ./sessions:/app/sessions
       - ./app:/app/app
       - ${HOME}/.aws:/home/appuser/.aws:ro  # Mount AWS credentials folder (read-only)
+      - ./k3s_data/kubeconfig:/app/k3s_data/kubeconfig:ro  # Mount K3s kubeconfig
     command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
     restart: unless-stopped
     healthcheck:
@@ -66,6 +112,7 @@ services:
       - sre-bot-network
     depends_on:
       - api
+      - k3s-server
 
 networks:
   sre-bot-network:
@@ -73,4 +120,6 @@ networks:
 
 volumes:
   sessions:
+    driver: local
+  k3s-server:
     driver: local

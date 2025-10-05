@@ -1,76 +1,76 @@
 ## FEATURE
 
-I am building an SRE agent that will be used to troubleshoot and resolve issues in our infrastructure and do finops. There will be coordinator agent that will coordinate and pass to other agents like finops agent that has access to aws cloudwatch mcp tools. In this iteration, i want to build finops agent that will query cost explorer mcp tools and give me the cost of the resources.
+i want to use aws eks mcp servers to get the information about the eks clusters. To test and develop locally lets bring up k3s with docker-compose as well so we can test the functionality locally.
 
 ## EXAMPLES
-Multi agent structure on strands framework.
+
+AWS EKS MCP Servers.
+
 ```
-# Researcher Agent with web capabilities
-researcher_agent = Agent(
-    system_prompt=(
-        "You are a Researcher Agent that gathers information from the web. "
-        "1. Determine if the input is a research query or factual claim "
-        "2. Use your research tools (http_request, retrieve) to find relevant information "
-        "3. Include source URLs and keep findings under 500 words"
-    ),
-    callback_handler=None,
-    tools=[http_request]
-)
-
-# Analyst Agent for verification and insight extraction
-analyst_agent = Agent(
-    callback_handler=None,
-    system_prompt=(
-        "You are an Analyst Agent that verifies information. "
-        "1. For factual claims: Rate accuracy from 1-5 and correct if needed "
-        "2. For research queries: Identify 3-5 key insights "
-        "3. Evaluate source reliability and keep analysis under 400 words"
-    ),
-)
-
-# Writer Agent for final report creation
-writer_agent = Agent(
-    system_prompt=(
-        "You are a Writer Agent that creates clear reports. "
-        "1. For fact-checks: State whether claims are true or false "
-        "2. For research: Present key insights in a logical structure "
-        "3. Keep reports under 500 words with brief source mentions"
-    )
-)
+{
+  "mcpServers": {
+    "awslabs.eks-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "awslabs.eks-mcp-server@latest",
+        "--allow-write",
+        "--allow-sensitive-data-access"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "autoApprove": [],
+      "disabled": false
+    }
+  }
+}
 ```
-
-### Workflow Orchestration
+### K3s with docker-compose
+https://sachua.github.io/post/Lightweight%20Kubernetes%20Using%20Docker%20Compose.html
 ```
-def run_research_workflow(user_input):
-    # Step 1: Researcher Agent gathers web information
-    researcher_response = researcher_agent(
-        f"Research: '{user_input}'. Use your available tools to gather information from reliable sources.",
-    )
-    research_findings = str(researcher_response)
-
-    # Step 2: Analyst Agent verifies facts
-    analyst_response = analyst_agent(
-        f"Analyze these findings about '{user_input}':\n\n{research_findings}",
-    )
-    analysis = str(analyst_response)
-
-    # Step 3: Writer Agent creates report
-    final_report = writer_agent(
-        f"Create a report on '{user_input}' based on this analysis:\n\n{analysis}"
-    )
-
-    return final_report
+version: '3.7'
+services:
+  server:
+    image: rancher/k3s:v1.24.0-rc1-k3s1-amd64
+    networks:
+    - default
+    command: server
+    tmpfs:
+    - /run
+    - /var/run
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 65535
+        hard: 65535
+    privileged: true
+    restart: always
+    environment:
+    # - K3S_TOKEN=${K3S_PASSWORD_1} # Only required if we are running more than 1 node
+    - K3S_KUBECONFIG_OUTPUT=/output/kubeconfig.yaml
+    - K3S_KUBECONFIG_MODE=666
+    volumes:
+    - k3s-server:/var/lib/rancher/k3s
+    # This is just so that we get the kubeconfig file out
+    - ./k3s_data/kubeconfig:/output
+    - ./k3s_data/docker_images:/var/lib/rancher/k3s/agent/images
+    expose:
+    - "6443"  # Kubernetes API Server
+    - "80"    # Ingress controller port 80
+    - "443"   # Ingress controller port 443
+    ports:
+    - 6443:6443
+volumes:
+  k3s-server: {}
+networks:
+  default:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.98.0.0/16" # Self-defined subnet on local machine
 ```
-
-
-
-
-
+- https://raw.githubusercontent.com/its-knowledge-sharing/K3S-Demo/refs/heads/production/docker-compose.yaml
 ## DOCUMENTATION
-
--[Multi Agent Example](https://strandsagents.com/latest/documentation/docs/examples/python/multi_agent_example/multi_agent_example/)
--[Agent Workflows Example](https://strandsagents.com/latest/documentation/docs/examples/python/agents_workflows/)
+- [AWS EKS MCP Servers](https://awslabs.github.io/mcp/servers/eks-mcp-server/)
 
 ## OTHER CONSIDERATIONS
-
-- use @agent-library-docs-researcher to find the documentation for the library.

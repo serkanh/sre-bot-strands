@@ -102,3 +102,55 @@ async def test_coordinator_handles_general_query(
     # Verify direct response (no tool use)
     message_events = [e for e in events if e.get("type") == "agent_message"]
     assert len(message_events) > 0
+
+
+@pytest.mark.asyncio
+@patch("app.agents.coordinator_agent.BedrockModel")
+@patch("app.agents.coordinator_agent.Agent")
+async def test_coordinator_routes_eks_query(mock_agent_class, mock_bedrock_model, mock_settings):
+    """Test that coordinator routes EKS queries to eks_assistant."""
+    # Setup mock agent
+    mock_agent_instance = MagicMock()
+
+    # Mock streaming response with eks_assistant tool use
+    async def mock_stream(*args, **kwargs):
+        yield {"start": True}
+        yield {"current_tool_use": {"name": "eks_assistant"}}
+        yield {"data": "3 pods are running in the cluster"}
+        yield {"complete": True}
+
+    mock_agent_instance.stream_async = mock_stream
+    mock_agent_class.return_value = mock_agent_instance
+
+    # Create coordinator
+    coordinator = CoordinatorAgent(mock_settings)
+
+    # Test EKS query
+    events = []
+    async for event in coordinator.chat("What pods are running in my cluster?", "test_user"):
+        events.append(event)
+
+    # Verify routing to eks_assistant
+    tool_events = [e for e in events if e.get("type") == "tool_use"]
+    assert len(tool_events) > 0
+    assert any("eks" in e.get("tool_name", "").lower() for e in tool_events)
+
+
+@pytest.mark.asyncio
+@patch("app.agents.coordinator_agent.BedrockModel")
+@patch("app.agents.coordinator_agent.Agent")
+async def test_coordinator_has_eks_tool(mock_agent_class, mock_bedrock_model, mock_settings):
+    """Test that coordinator has eks_assistant in tools."""
+    # Create coordinator
+    _ = CoordinatorAgent(mock_settings)
+
+    # Verify eks_assistant is in the tools list
+    call_kwargs = mock_agent_class.call_args.kwargs
+    assert "tools" in call_kwargs
+    tools = call_kwargs["tools"]
+
+    # Check that we have both finops_assistant and eks_assistant
+    assert len(tools) == 2  # Should have both tools
+    tool_names = [tool.__name__ if callable(tool) else str(tool) for tool in tools]
+    assert "finops_assistant" in str(tool_names)
+    assert "eks_assistant" in str(tool_names)

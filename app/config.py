@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # MCP Configuration
     FASTMCP_LOG_LEVEL: str = "ERROR"  # Control MCP server logging
 
+    # Kubernetes Configuration
+    KUBECONFIG: str | None = None  # Path to kubeconfig file (for K3s or EKS)
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
